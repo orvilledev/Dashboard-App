@@ -221,6 +221,45 @@ class UserPreferences(models.Model):
         default='light',
         help_text='User selected color theme'
     )
+    # Dashboard layout - stores widget positions and sizes as JSON
+    # e.g. {"openTasks": {"x": 0, "y": 0, "width": 400, "height": 300}, "quote": {"x": 500, "y": 0, "width": 300, "height": 200}}
+    dashboard_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Dashboard widget positions and sizes'
+    )
+    # Dashboard widget visibility - stores which widgets are visible
+    # e.g. {"openTasks": true, "quote": true, "recentActivity": false}
+    dashboard_widget_visibility = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Dashboard widget visibility settings'
+    )
+    # Dashboard active widgets - stores which widgets are added to the dashboard
+    # e.g. ["openTasks", "quote", "recentActivity"]
+    dashboard_active_widgets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of widget IDs that are active on the dashboard'
+    )
+    # Clock widget preferences
+    clock_widget_timezones = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Clock widget timezone settings: {"timezone1": "...", "timezone2": "..."}'
+    )
+    # Mood widget preferences
+    mood_widget_current = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        help_text='Current mood emoji'
+    )
+    mood_widget_history = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Mood history: [{"date": "YYYY-MM-DD", "mood": "😀"}, ...]'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

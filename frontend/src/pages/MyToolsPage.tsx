@@ -797,7 +797,7 @@ export function MyToolsPage() {
               className={`p-2 rounded transition-all ${
                 viewMode === 'list' ? 'bg-white shadow-sm' : 'opacity-60 hover:opacity-100'
               }`}
-              style={{ color: viewMode === 'list' ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
+              style={{ color: viewMode === 'list' ? 'var(--color-primary)' : '#ffffff' }}
               title="List view"
             >
               <List size={18} />

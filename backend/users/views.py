@@ -123,7 +123,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             'tools_category_order': preferences.tools_category_order,
             'tools_category_labels': preferences.tools_category_labels,
             'tools_category_colors': preferences.tools_category_colors,
-            'theme': preferences.theme
+            'theme': preferences.theme,
+            'dashboard_layout': preferences.dashboard_layout,
+            'dashboard_widget_visibility': preferences.dashboard_widget_visibility,
+            'dashboard_active_widgets': preferences.dashboard_active_widgets,
+            'clock_widget_timezones': preferences.clock_widget_timezones,
+            'mood_widget_current': preferences.mood_widget_current,
+            'mood_widget_history': preferences.mood_widget_history
         })
     
     @action(detail=False, methods=['post'])
@@ -197,6 +203,70 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
+        # Update dashboard layout if provided
+        if 'dashboard_layout' in request.data:
+            dashboard_layout = request.data['dashboard_layout']
+            if isinstance(dashboard_layout, dict):
+                preferences.dashboard_layout = dashboard_layout
+                updated = True
+            else:
+                return Response(
+                    {'error': 'dashboard_layout must be a dictionary'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Update dashboard widget visibility if provided
+        if 'dashboard_widget_visibility' in request.data:
+            widget_visibility = request.data['dashboard_widget_visibility']
+            if isinstance(widget_visibility, dict):
+                preferences.dashboard_widget_visibility = widget_visibility
+                updated = True
+            else:
+                return Response(
+                    {'error': 'dashboard_widget_visibility must be a dictionary'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Update dashboard active widgets if provided
+        if 'dashboard_active_widgets' in request.data:
+            active_widgets = request.data['dashboard_active_widgets']
+            if isinstance(active_widgets, list):
+                preferences.dashboard_active_widgets = active_widgets
+                updated = True
+            else:
+                return Response(
+                    {'error': 'dashboard_active_widgets must be a list'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Update clock widget timezones if provided
+        if 'clock_widget_timezones' in request.data:
+            clock_timezones = request.data['clock_widget_timezones']
+            if isinstance(clock_timezones, dict):
+                preferences.clock_widget_timezones = clock_timezones
+                updated = True
+            else:
+                return Response(
+                    {'error': 'clock_widget_timezones must be a dictionary'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Update mood widget preferences if provided
+        if 'mood_widget_current' in request.data:
+            preferences.mood_widget_current = request.data['mood_widget_current']
+            updated = True
+        
+        if 'mood_widget_history' in request.data:
+            mood_history = request.data['mood_widget_history']
+            if isinstance(mood_history, list):
+                preferences.mood_widget_history = mood_history
+                updated = True
+            else:
+                return Response(
+                    {'error': 'mood_widget_history must be a list'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
         if updated:
             preferences.save()
             return Response({
@@ -204,7 +274,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                 'tools_category_order': preferences.tools_category_order,
                 'tools_category_labels': preferences.tools_category_labels,
                 'tools_category_colors': preferences.tools_category_colors,
-                'theme': preferences.theme
+                'theme': preferences.theme,
+                'dashboard_layout': preferences.dashboard_layout,
+                'dashboard_widget_visibility': preferences.dashboard_widget_visibility,
+                'dashboard_active_widgets': preferences.dashboard_active_widgets,
+                'clock_widget_timezones': preferences.clock_widget_timezones,
+                'mood_widget_current': preferences.mood_widget_current,
+                'mood_widget_history': preferences.mood_widget_history
             })
         
         return Response(

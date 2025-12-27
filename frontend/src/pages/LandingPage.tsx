@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui';
 import { Link2, CheckSquare, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { HandPulseIcon } from '@/components/icons/HandPulseIcon';
 
 const features = [
   {
@@ -28,7 +29,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-theme-primary rounded-lg flex items-center justify-center shadow-soft">
-              <span className="text-white font-serif font-bold text-lg">A</span>
+              <HandPulseIcon size={20} color="white" strokeWidth={2} />
             </div>
             <span className="font-serif font-bold text-xl text-theme-primary">AMZPulse</span>
           </div>
@@ -131,7 +132,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-theme-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-serif font-bold text-lg">A</span>
+              <HandPulseIcon size={20} color="white" strokeWidth={2} />
             </div>
             <span className="font-serif font-bold text-xl text-theme-primary">AMZPulse</span>
           </div>

@@ -16,6 +16,7 @@ import {
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { useAuth } from '@/hooks';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { HandPulseIcon } from '@/components/icons/HandPulseIcon';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -65,7 +66,7 @@ export function Sidebar() {
       <div className="p-6 border-b" style={{ borderColor: 'var(--color-border)' }}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-soft" style={{ backgroundColor: 'var(--color-primary)' }}>
-            <span className="text-white font-serif font-bold text-lg">A</span>
+            <HandPulseIcon size={20} color="white" strokeWidth={2} />
           </div>
           <div>
             <h1 className="font-serif font-bold text-xl" style={{ color: 'var(--color-text-primary)' }}>AMZPulse</h1>

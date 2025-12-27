@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AppLayout } from '@/components/layout';
 import { LandingPage, Dashboard, ToolsPage, MyToolsPage, TasksPage, TeamPage, TeamDetailPage, JoinTeamPage, SettingsPage, MemberProfilePage } from '@/pages';
+import { HandPulseIcon } from '@/components/icons/HandPulseIcon';
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -40,7 +41,7 @@ function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <div className="w-full max-w-md text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-12 h-12 bg-theme-primary rounded-lg flex items-center justify-center shadow-soft">
-              <span className="text-white font-serif font-bold text-xl">A</span>
+              <HandPulseIcon size={24} color="white" strokeWidth={2} />
             </div>
           </div>
           <h1 className="font-serif font-bold text-2xl text-theme-primary mb-4">AMZPulse</h1>
@@ -69,7 +70,7 @@ function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-12 h-12 bg-theme-primary rounded-lg flex items-center justify-center shadow-soft">
-              <span className="text-white font-serif font-bold text-xl">A</span>
+              <HandPulseIcon size={24} color="white" strokeWidth={2} />
             </div>
           </div>
           <h1 className="font-serif font-bold text-2xl text-theme-primary">AMZPulse</h1>

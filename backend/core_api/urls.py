@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from users.views import UserViewSet
 from toollinks.views import ToolLinkViewSet
 from workspace_documents.views import DocumentViewSet
-from workspace_tasks.views import TaskViewSet
+from workspace_tasks.views import TaskViewSet, TaskTemplateViewSet
 from workspace_teams.views import TeamViewSet, TeamMemberViewSet, TeamInviteViewSet, TeamJoinRequestViewSet
 
 router = DefaultRouter()
@@ -14,6 +14,7 @@ router.register(r'users', UserViewSet, basename='user')
 router.register(r'tools', ToolLinkViewSet, basename='tool')
 router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'tasks', TaskViewSet, basename='task')
+router.register(r'task-templates', TaskTemplateViewSet, basename='task-template')
 router.register(r'teams', TeamViewSet, basename='team')
 router.register(r'members', TeamMemberViewSet, basename='member')
 router.register(r'invites', TeamInviteViewSet, basename='invite')
