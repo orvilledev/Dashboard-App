@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     # Local apps
     'users',
-    'toollinks',
+    'toollinks.apps.ToollinksConfig',  # Use app config to ensure signals are registered
     'workspace_documents',
     'workspace_tasks',
     'workspace_teams',
@@ -56,7 +56,7 @@ ROOT_URLCONF = 'amzpulse.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -105,7 +105,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS settings
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:5173,http://127.0.0.1:5173'
+    default='http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174'
 ).split(',')
 CORS_ALLOW_CREDENTIALS = True
 
@@ -162,6 +162,18 @@ if SENTRY_DSN:
         traces_sample_rate=0.1,
         profiles_sample_rate=0.1,
     )
+
+# Email Configuration
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='AMZPulse <noreply@amzpulse.com>')
+
+# Frontend URL for invite links
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 
 # Security settings for production
 if not DEBUG:

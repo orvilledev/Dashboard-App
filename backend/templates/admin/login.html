@@ -1,0 +1,251 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans 'Log in' %} | AMZPulse Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold-400: #E5A835;
+            --gold-500: #D4922A;
+            --gold-600: #B87A1F;
+            --charcoal-100: #E8E8E8;
+            --charcoal-400: #8A8A8A;
+            --charcoal-500: #6B6B6B;
+            --charcoal-700: #3D3D3D;
+            --charcoal-800: #2A2A2A;
+            --charcoal-900: #1A1A1A;
+            --cream-50: #FDFBF7;
+            --cream-100: #FAF7F0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--cream-50) 0%, var(--cream-100) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--gold-400) 0%, var(--gold-600) 100%);
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(229, 168, 53, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .logo span {
+            color: white;
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .logo-section h1 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: var(--charcoal-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-section p {
+            color: var(--charcoal-500);
+            font-size: 0.95rem;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--charcoal-100);
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: var(--charcoal-700);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--charcoal-100);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: var(--cream-50);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--gold-500);
+            box-shadow: 0 0 0 3px rgba(229, 168, 53, 0.15);
+            background: white;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--charcoal-800);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            background: var(--charcoal-700);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        .error-message ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--gold-400) 0%, var(--gold-600) 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--charcoal-400);
+            font-size: 0.85rem;
+        }
+
+        .footer-text a {
+            color: var(--gold-600);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo">
+                <span>A</span>
+            </div>
+            <h1>AMZPulse</h1>
+            <p>Admin Dashboard</p>
+            <div class="admin-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Secure Admin Access
+            </div>
+        </div>
+
+        <div class="login-card">
+            {% if form.errors %}
+            <div class="error-message">
+                <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'admin:login' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                
+                <div class="form-group">
+                    <label for="id_username">{% trans 'Username' %}</label>
+                    <input type="text" name="username" id="id_username" autofocus required placeholder="Enter your username">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password">{% trans 'Password' %}</label>
+                    <input type="password" name="password" id="id_password" required placeholder="Enter your password">
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    {% trans 'Sign In' %}
+                </button>
+            </form>
+        </div>
+
+        <p class="footer-text">
+            <a href="/">← Back to AMZPulse</a>
+        </p>
+    </div>
+</body>
+</html>
+

@@ -19,6 +19,7 @@ class Task(models.Model):
     
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    link = models.URLField(max_length=500, blank=True, null=True, help_text='Optional link related to the task')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     due_date = models.DateField(null=True, blank=True)

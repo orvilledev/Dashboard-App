@@ -61,6 +61,31 @@ class TaskViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
     
+    @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
+    def update_status(self, request, pk=None):
+        """Allow any authenticated user to update task status."""
+        task = self.get_object()
+        new_status = request.data.get('status')
+        
+        if new_status not in ['todo', 'in_progress', 'completed']:
+            return Response(
+                {'error': 'Invalid status. Must be one of: todo, in_progress, completed'},
+                status=400
+            )
+        
+        # Update status
+        task.status = new_status
+        
+        # Set completed_at when task is marked as completed
+        if new_status == 'completed' and not task.completed_at:
+            task.completed_at = timezone.now()
+        elif new_status != 'completed' and task.completed_at:
+            task.completed_at = None
+        
+        task.save()
+        serializer = self.get_serializer(task)
+        return Response(serializer.data)
+    
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Get task statistics."""

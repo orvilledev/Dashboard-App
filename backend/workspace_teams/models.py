@@ -81,3 +81,42 @@ class TeamInvite(models.Model):
     
     def __str__(self):
         return f"Invite to {self.email} for {self.team}"
+
+
+class TeamJoinRequest(models.Model):
+    """Model for team join requests from users."""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='join_requests')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='team_join_requests'
+    )
+    message = models.TextField(blank=True, help_text='Optional message from user')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_join_requests'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'team_join_requests'
+        unique_together = ['team', 'user']
+        verbose_name = 'Team Join Request'
+        verbose_name_plural = 'Team Join Requests'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user} requesting to join {self.team} ({self.status})"
