@@ -1,0 +1,4 @@
+web: gunicorn amzpulse.wsgi:application
+worker: celery -A amzpulse worker --loglevel=info
+beat: celery -A amzpulse beat --loglevel=info
+

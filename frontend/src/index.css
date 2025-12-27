@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Typography */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-body: 'Lora', Georgia, serif;
+
+  /* Colors - Warm neutrals palette */
+  --color-cream-50: #FEFCF8;
+  --color-cream-100: #FDF8EF;
+  --color-cream-200: #F9F1E1;
+  --color-cream-300: #F2E6CE;
+  --color-cream-400: #E8D5B0;
+
+  --color-charcoal-50: #F7F7F7;
+  --color-charcoal-100: #E3E3E3;
+  --color-charcoal-200: #C8C8C8;
+  --color-charcoal-300: #A4A4A4;
+  --color-charcoal-400: #6B6B6B;
+  --color-charcoal-500: #4A4A4A;
+  --color-charcoal-600: #3D3D3D;
+  --color-charcoal-700: #2E2E2E;
+  --color-charcoal-800: #1F1F1F;
+  --color-charcoal-900: #141414;
+
+  --color-gold-50: #FBF8F0;
+  --color-gold-100: #F5EDD9;
+  --color-gold-200: #EBDAB3;
+  --color-gold-300: #DFC388;
+  --color-gold-400: #D4A84A;
+  --color-gold-500: #C49A3D;
+  --color-gold-600: #A67C2E;
+  --color-gold-700: #7D5D23;
+  --color-gold-800: #5C4319;
+  --color-gold-900: #3E2D11;
+
+  /* Shadows */
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+
+  /* Border Radius */
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-cream-50);
+  color: var(--color-charcoal-800);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-charcoal-900);
+}
+
+/* Custom utilities */
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.shadow-medium {
+  box-shadow: var(--shadow-medium);
+}
+
+.shadow-elevated {
+  box-shadow: var(--shadow-elevated);
+}
