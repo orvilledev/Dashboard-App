@@ -11,15 +11,20 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={clsx(
-          'bg-white rounded-xl p-6',
+          'rounded-xl p-6',
           {
             'shadow-soft': variant === 'default',
             'shadow-medium hover:shadow-elevated transition-shadow duration-300':
               variant === 'elevated',
-            'border border-charcoal-200 shadow-none': variant === 'bordered',
+            'shadow-none': variant === 'bordered',
           },
           className
         )}
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          borderColor: 'var(--color-border)',
+          borderWidth: variant === 'bordered' ? '1px' : '0',
+        }}
         {...props}
       >
         {children}
@@ -35,7 +40,8 @@ export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
     return (
       <div
         ref={ref}
-        className={clsx('mb-4 pb-4 border-b border-charcoal-100', className)}
+        className={clsx('mb-4 pb-4 border-b', className)}
+        style={{ borderColor: 'var(--color-border-light)' }}
         {...props}
       >
         {children}
@@ -51,7 +57,8 @@ export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadi
     return (
       <h3
         ref={ref}
-        className={clsx('text-xl font-semibold text-charcoal-900 font-serif', className)}
+        className={clsx('text-xl font-semibold font-serif', className)}
+        style={{ color: 'var(--color-text-primary)' }}
         {...props}
       >
         {children}
@@ -65,7 +72,12 @@ CardTitle.displayName = 'CardTitle';
 export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, children, ...props }, ref) => {
     return (
-      <div ref={ref} className={clsx('text-charcoal-600', className)} {...props}>
+      <div 
+        ref={ref} 
+        className={clsx(className)} 
+        style={{ color: 'var(--color-text-secondary)' }}
+        {...props}
+      >
         {children}
       </div>
     );

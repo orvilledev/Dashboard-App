@@ -19,22 +19,38 @@ export async function apiClient<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...fetchOptions,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...fetchOptions,
+      headers,
+      cache: 'no-cache', // Prevent browser caching
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+      // Include validation errors if present
+      const errorMessage = error.detail || error.message || (typeof error === 'string' ? error : JSON.stringify(error));
+      const validationErrors = error.non_field_errors || error;
+      const fullError = validationErrors && typeof validationErrors === 'object' 
+        ? JSON.stringify(validationErrors) 
+        : errorMessage;
+      throw new Error(fullError || `HTTP error! status: ${response.status}`);
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return null as T;
+    }
+
+    return response.json();
+  } catch (error) {
+    // Handle network errors (fetch failures)
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error(`Unable to connect to the server. Please ensure the backend is running at ${API_URL}`);
+    }
+    // Re-throw other errors
+    throw error;
   }
-
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return null as T;
-  }
-
-  return response.json();
 }
 
 // Typed API methods

@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, SignIn, SignUp } from '@clerk/clerk-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AppLayout } from '@/components/layout';
-import { LandingPage, Dashboard, ToolsPage, DocumentsPage, TasksPage, TeamPage } from '@/pages';
+import { LandingPage, Dashboard, ToolsPage, MyToolsPage, TasksPage, TeamPage, TeamDetailPage, JoinTeamPage, SettingsPage, MemberProfilePage } from '@/pages';
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -35,24 +36,24 @@ function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   // If no Clerk key, show configuration message
   if (!clerkPubKey) {
     return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-theme-background flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-gold-400 to-gold-600 rounded-lg flex items-center justify-center shadow-soft">
+            <div className="w-12 h-12 bg-theme-primary rounded-lg flex items-center justify-center shadow-soft">
               <span className="text-white font-serif font-bold text-xl">A</span>
             </div>
           </div>
-          <h1 className="font-serif font-bold text-2xl text-charcoal-900 mb-4">AMZPulse</h1>
-          <div className="bg-white rounded-xl shadow-medium border border-charcoal-100 p-6">
-            <p className="text-charcoal-700 mb-4">
+          <h1 className="font-serif font-bold text-2xl text-theme-primary mb-4">AMZPulse</h1>
+          <div className="bg-theme-surface rounded-xl shadow-medium border border-theme-light p-6">
+            <p className="text-theme-secondary mb-4">
               Authentication is not configured yet.
             </p>
-            <p className="text-charcoal-500 text-sm mb-4">
-              Add <code className="bg-cream-100 px-2 py-1 rounded text-charcoal-700">VITE_CLERK_PUBLISHABLE_KEY</code> to your <code className="bg-cream-100 px-2 py-1 rounded text-charcoal-700">.env</code> file to enable sign in.
+            <p className="text-theme-tertiary text-sm mb-4">
+              Add <code className="bg-theme-background px-2 py-1 rounded text-theme-secondary">VITE_CLERK_PUBLISHABLE_KEY</code> to your <code className="bg-theme-background px-2 py-1 rounded text-theme-secondary">.env</code> file to enable sign in.
             </p>
             <a
               href="/"
-              className="inline-block px-4 py-2 bg-charcoal-800 text-white rounded-lg hover:bg-charcoal-700 transition-colors"
+              className="inline-block px-4 py-2 bg-theme-primary text-white rounded-lg hover:bg-theme-primary-hover transition-colors"
             >
               Back to Home
             </a>
@@ -63,16 +64,16 @@ function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-theme-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-gold-400 to-gold-600 rounded-lg flex items-center justify-center shadow-soft">
+            <div className="w-12 h-12 bg-theme-primary rounded-lg flex items-center justify-center shadow-soft">
               <span className="text-white font-serif font-bold text-xl">A</span>
             </div>
           </div>
-          <h1 className="font-serif font-bold text-2xl text-charcoal-900">AMZPulse</h1>
-          <p className="text-charcoal-500 mt-1">
+          <h1 className="font-serif font-bold text-2xl text-theme-primary">AMZPulse</h1>
+          <p className="text-theme-secondary mt-1">
             {mode === 'sign-in' ? 'Welcome back' : 'Create your workspace'}
           </p>
         </div>
@@ -85,9 +86,17 @@ function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             appearance={{
               elements: {
                 rootBox: 'w-full',
-                card: 'shadow-medium rounded-xl border border-charcoal-100',
-                headerTitle: 'font-serif',
-                formButtonPrimary: 'bg-charcoal-800 hover:bg-charcoal-700',
+                card: 'shadow-medium rounded-xl border border-theme-light bg-theme-surface',
+                headerTitle: 'font-serif text-theme-primary',
+                headerSubtitle: 'text-theme-secondary',
+                formLabelHorizontalRow: 'text-theme-secondary',
+                formFieldLabel: 'text-theme-secondary',
+                formFieldInput: 'bg-theme-background border-theme-light text-theme-primary',
+                formButtonPrimary: 'bg-theme-primary hover:bg-theme-primary-hover',
+                footerActionText: 'text-theme-secondary',
+                footerActionLink: 'text-theme-accent hover:text-theme-primary-hover',
+                identityPreviewText: 'text-theme-primary',
+                identityPreviewEditButtonIcon: 'text-theme-accent',
               },
             }}
           />
@@ -100,9 +109,17 @@ function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             appearance={{
               elements: {
                 rootBox: 'w-full',
-                card: 'shadow-medium rounded-xl border border-charcoal-100',
-                headerTitle: 'font-serif',
-                formButtonPrimary: 'bg-charcoal-800 hover:bg-charcoal-700',
+                card: 'shadow-medium rounded-xl border border-theme-light bg-theme-surface',
+                headerTitle: 'font-serif text-theme-primary',
+                headerSubtitle: 'text-theme-secondary',
+                formLabelHorizontalRow: 'text-theme-secondary',
+                formFieldLabel: 'text-theme-secondary',
+                formFieldInput: 'bg-theme-background border-theme-light text-theme-primary',
+                formButtonPrimary: 'bg-theme-primary hover:bg-theme-primary-hover',
+                footerActionText: 'text-theme-secondary',
+                footerActionLink: 'text-theme-accent hover:text-theme-primary-hover',
+                identityPreviewText: 'text-theme-primary',
+                identityPreviewEditButtonIcon: 'text-theme-accent',
               },
             }}
           />
@@ -130,9 +147,13 @@ function AppRoutes() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tools" element={<ToolsPage />} />
-        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/my-tools" element={<MyToolsPage />} />
         <Route path="/tasks" element={<TasksPage />} />
-        <Route path="/team" element={<TeamPage />} />
+        <Route path="/teams" element={<TeamPage />} />
+        <Route path="/teams/:teamId" element={<TeamDetailPage />} />
+        <Route path="/join-team" element={<JoinTeamPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile/:userId" element={<MemberProfilePage />} />
       </Route>
 
       {/* Fallback */}
@@ -142,14 +163,16 @@ function AppRoutes() {
 }
 
 export default function App() {
-  // If no Clerk key, render routes without ClerkProvider
+  // If no Clerk key, render routes without ClerkProvider but WITH ThemeProvider
   // The AuthPage and ProtectedRoute components will handle the missing key gracefully
   if (!clerkPubKey) {
     return (
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ThemeProvider>
       </QueryClientProvider>
     );
   }
@@ -157,9 +180,11 @@ export default function App() {
   return (
     <ClerkProvider publishableKey={clerkPubKey}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );
