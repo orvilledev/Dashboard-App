@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from users.views import UserViewSet
+from users.views import UserViewSet, LeaveScheduleViewSet
 from toollinks.views import ToolLinkViewSet
 from workspace_documents.views import DocumentViewSet
 from workspace_tasks.views import TaskViewSet, TaskTemplateViewSet
@@ -11,6 +11,7 @@ from workspace_teams.views import TeamViewSet, TeamMemberViewSet, TeamInviteView
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
+router.register(r'leave-schedules', LeaveScheduleViewSet, basename='leave-schedule')
 router.register(r'tools', ToolLinkViewSet, basename='tool')
 router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'tasks', TaskViewSet, basename='task')
@@ -233,6 +234,10 @@ def api_root(request):
                             <span class="endpoint-path">/api/v1/users/</span>
                         </div>
                         <div class="endpoint">
+                            <span class="endpoint-name">Leave Schedules</span>
+                            <span class="endpoint-path">/api/v1/leave-schedules/</span>
+                        </div>
+                        <div class="endpoint">
                             <span class="endpoint-name">Tools</span>
                             <span class="endpoint-path">/api/v1/tools/</span>
                         </div>
@@ -276,6 +281,7 @@ def api_root(request):
     # For API requests, return JSON
     return Response({
         'users': '/api/v1/users/',
+        'leave-schedules': '/api/v1/leave-schedules/',
         'tools': '/api/v1/tools/',
         'documents': '/api/v1/documents/',
         'tasks': '/api/v1/tasks/',

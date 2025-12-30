@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Card, Button, Input } from '@/components/ui';
 import { api } from '@/api';
-import { ExternalLink, Link2, Loader2, AlertCircle, Star, GripVertical, Plus, Pencil, Trash2, X, Edit2, Check, X as XIcon, Palette, LayoutGrid, List, Search } from 'lucide-react';
+import { ExternalLink, Link2, Loader2, AlertCircle, Star, GripVertical, Plus, Pencil, Trash2, X, Edit2, Check, X as XIcon, Palette, LayoutGrid, List, Search, Wrench } from 'lucide-react';
 
 interface Tool {
   id: number;
@@ -57,6 +57,11 @@ export function MyToolsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [toolToDelete, setToolToDelete] = useState<number | null>(null);
+  const [deleteGroupConfirmOpen, setDeleteGroupConfirmOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+  const [groupDeleteMessage, setGroupDeleteMessage] = useState<string>('');
 
   // Fetch favorite tools and user preferences from API
   useEffect(() => {
@@ -162,17 +167,31 @@ export function MyToolsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this tool?')) return;
+  const handleDelete = (id: number) => {
+    setToolToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!toolToDelete) return;
     
     try {
       const token = await getToken?.();
-      await api.delete(`/tools/${id}/`, token || undefined);
-      setTools(tools.filter((t) => t.id !== id));
+      await api.delete(`/tools/${toolToDelete}/`, token || undefined);
+      setTools(tools.filter((t) => t.id !== toolToDelete));
+      setDeleteConfirmOpen(false);
+      setToolToDelete(null);
     } catch (err) {
       console.error('Failed to delete tool:', err);
       alert(err instanceof Error ? err.message : 'Failed to delete tool');
+      setDeleteConfirmOpen(false);
+      setToolToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setToolToDelete(null);
   };
 
   const closeModal = () => {
@@ -504,7 +523,7 @@ export function MyToolsPage() {
   };
 
   // Handle delete custom group (reset to default)
-  const handleDeleteCustomGroup = async (categoryKey: string) => {
+  const handleDeleteCustomGroup = (categoryKey: string) => {
     const hasCustomLabel = customCategoryLabels[categoryKey];
     const hasCustomColor = customCategoryColors[categoryKey];
     
@@ -520,20 +539,27 @@ export function MyToolsPage() {
       ? `Are you sure you want to reset the group name "${getCategoryLabel(categoryKey)}" to default?`
       : `Are you sure you want to reset the group color to default?`;
     
-    if (!confirm(message)) {
-      return;
-    }
+    setGroupToDelete(categoryKey);
+    setGroupDeleteMessage(message);
+    setDeleteGroupConfirmOpen(true);
+  };
+
+  const confirmDeleteGroup = async () => {
+    if (!groupToDelete) return;
 
     try {
       const token = await getToken?.();
       const newLabels = { ...customCategoryLabels };
       const newColors = { ...customCategoryColors };
       
+      const hasCustomLabel = customCategoryLabels[groupToDelete];
+      const hasCustomColor = customCategoryColors[groupToDelete];
+      
       if (hasCustomLabel) {
-        delete newLabels[categoryKey];
+        delete newLabels[groupToDelete];
       }
       if (hasCustomColor) {
-        delete newColors[categoryKey];
+        delete newColors[groupToDelete];
       }
       
       await api.post('/users/update_preferences/', { 
@@ -543,16 +569,29 @@ export function MyToolsPage() {
       
       setCustomCategoryLabels(newLabels);
       setCustomCategoryColors(newColors);
+      setDeleteGroupConfirmOpen(false);
+      setGroupToDelete(null);
+      setGroupDeleteMessage('');
     } catch (err) {
       console.error('Failed to delete group:', err);
       alert(err instanceof Error ? err.message : 'Failed to delete group');
+      setDeleteGroupConfirmOpen(false);
+      setGroupToDelete(null);
+      setGroupDeleteMessage('');
     }
   };
 
-  // Preset colors for quick selection (40 colors including black and white)
+  const cancelDeleteGroup = () => {
+    setDeleteGroupConfirmOpen(false);
+    setGroupToDelete(null);
+    setGroupDeleteMessage('');
+  };
+
+  // Preset colors for quick selection (40 colors including black)
+  // 40 colors arranged in 4 rows × 10 columns
   const presetColors = [
     '#000000', // Black
-    '#FFFFFF', // White
+    '#4B5563', // Dark Gray (replaces white)
     '#3B82F6', // Blue
     '#10B981', // Green
     '#F59E0B', // Amber
@@ -589,9 +628,7 @@ export function MyToolsPage() {
     '#9333EA', // Purple (vibrant)
     '#CA8A04', // Yellow (darker)
     '#0891B2', // Sky blue
-    '#BE185D', // Rose
     '#7E22CE', // Violet (darker)
-    '#0D9488', // Teal (darker)
   ];
 
   // Handle category color edit
@@ -630,6 +667,113 @@ export function MyToolsPage() {
   // Get category color (custom color or default)
   const getCategoryColor = (categoryKey: string): string => {
     return customCategoryColors[categoryKey] || 'var(--color-primary)';
+  };
+
+  // Helper function to determine if a color is light (returns true for light colors like white)
+  const isLightColor = (color: string): boolean => {
+    if (!color) return false;
+    
+    // Normalize the color string
+    const normalizedColor = color.trim().toLowerCase();
+    
+    // Handle CSS variables - assume they're not white (typically dark colors)
+    if (normalizedColor.startsWith('var(')) {
+      return false;
+    }
+    
+    // Check for white/light colors first (most common case)
+    // Check exact matches first
+    if (normalizedColor === 'white' || 
+        normalizedColor === '#ffffff' || 
+        normalizedColor === '#fff' ||
+        normalizedColor === 'rgb(255, 255, 255)' ||
+        normalizedColor === 'rgb(255,255,255)') {
+      return true;
+    }
+    
+    // Check if it starts with white variants (for rgba, etc.)
+    if (normalizedColor.startsWith('rgba(255, 255, 255') ||
+        normalizedColor.startsWith('rgba(255,255,255')) {
+      return true;
+    }
+    
+    // Handle hex colors
+    if (normalizedColor.startsWith('#')) {
+      let hex = normalizedColor.replace('#', '').toUpperCase();
+      
+      // Handle 3-character hex codes (e.g., #FFF)
+      if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+      }
+      
+      // Validate hex code
+      if (hex.length !== 6 || !/^[0-9A-F]{6}$/.test(hex)) {
+        return false;
+      }
+      
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      // Explicit check for white (#FFFFFF)
+      if (r === 255 && g === 255 && b === 255) {
+        return true;
+      }
+      
+      // Quick check: if all RGB values are high (>= 200), it's likely light
+      if (r >= 200 && g >= 200 && b >= 200) {
+        return true;
+      }
+      
+      // Calculate relative luminance (perceived brightness)
+      // Using WCAG relative luminance formula for better accuracy
+      const normalize = (val: number) => {
+        val = val / 255;
+        return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+      };
+      
+      const luminance = 0.2126 * normalize(r) + 0.7152 * normalize(g) + 0.0722 * normalize(b);
+      
+      // Consider colors with luminance > 0.5 as light (white is 1.0, black is 0.0)
+      // Using 0.5 as threshold for better contrast
+      return luminance > 0.5;
+    }
+    
+    // Handle rgb/rgba colors
+    if (normalizedColor.startsWith('rgb')) {
+      const match = normalizedColor.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        
+        // Explicit check for white
+        if (r === 255 && g === 255 && b === 255) {
+          return true;
+        }
+        
+        // Quick check for light colors
+        if (r >= 200 && g >= 200 && b >= 200) {
+          return true;
+        }
+        
+        // Calculate luminance
+        const normalize = (val: number) => {
+          val = val / 255;
+          return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+        };
+        
+        const luminance = 0.2126 * normalize(r) + 0.7152 * normalize(g) + 0.0722 * normalize(b);
+        return luminance > 0.5;
+      }
+    }
+    
+    return false;
+  };
+
+  // Get appropriate text color for a background color
+  const getTextColorForBackground = (backgroundColor: string): string => {
+    return isLightColor(backgroundColor) ? '#000000' : '#FFFFFF';
   };
 
   // Helper function to convert hex color to rgba with opacity
@@ -748,7 +892,7 @@ export function MyToolsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h1 className="text-3xl font-serif font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>My Tools</h1>
+          <h1 className="text-3xl font-serif font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>My Toolbox</h1>
           <p style={{ color: 'var(--color-text-secondary)' }}>Your starred tools and custom personal tools for quick access.</p>
         </div>
         <div className="flex gap-2 items-center">
@@ -765,7 +909,7 @@ export function MyToolsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border transition-colors placeholder:text-white/70"
               style={{
-                backgroundColor: 'var(--color-surface-elevated)',
+                backgroundColor: '#000000',
                 borderColor: 'var(--color-border)',
                 color: 'white',
               }}
@@ -781,7 +925,7 @@ export function MyToolsPage() {
               </button>
             )}
           </div>
-          <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)' }}>
+          <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: '#000000', border: '1px solid var(--color-border)' }}>
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded transition-all ${
@@ -822,7 +966,7 @@ export function MyToolsPage() {
           {orderedCategories.map((category, categoryIndex) => (
             <div 
               key={category} 
-              className={`space-y-4 group ${
+              className={`space-y-4 ${
                 draggedCategoryIndex === categoryIndex ? 'opacity-50' : ''
               } ${
                 dragOverCategoryIndex === categoryIndex ? 'ring-2 ring-blue-400 ring-offset-4 rounded-lg' : ''
@@ -896,38 +1040,76 @@ export function MyToolsPage() {
                       <span className="flex-1">{getCategoryLabel(category)}</span>
                       <div className="flex gap-1">
                         {editingCategoryColor === category ? (
-                          <div className="relative rounded-lg max-w-md" style={{ backgroundColor: 'var(--color-surface-elevated)', padding: '8px' }}>
-                            <button
-                              onClick={handleCategoryColorCancel}
-                              className="absolute top-2 right-2 p-1 rounded transition-colors hover:bg-gray-700 z-10"
-                              style={{ color: 'var(--color-text-secondary)' }}
-                              title="Close"
-                            >
-                              <XIcon size={16} />
-                            </button>
-                            <div className="grid grid-cols-10 gap-1.5" style={{ paddingRight: '28px' }}>
-                              {presetColors.map((color) => (
+                          <div className="rounded-lg max-w-md" style={{ backgroundColor: '#000000', padding: '8px' }}>
+                            {/* 4 rows × 10 columns - custom color in 4th row */}
+                            <div className="grid grid-cols-10 gap-1.5">
+                              {/* First 3 rows: 30 preset colors */}
+                              {presetColors.slice(0, 30).map((color) => (
                                 <button
                                   key={color}
                                   onClick={() => handleCategoryColorSave(category, color)}
                                   className="w-6 h-6 rounded border-2 shadow-sm hover:scale-110 transition-transform justify-self-start"
-                                  style={{ 
+                                  style={{
                                     backgroundColor: color,
-                                    borderColor: color === '#FFFFFF' ? '#E5E7EB' : 'white'
+                                    borderColor: 'white'
                                   }}
                                   title={`Set color to ${color}`}
                                 />
                               ))}
-                              <input
-                                type="color"
-                                value={customCategoryColors[category] || '#3B82F6'}
-                                onChange={(e) => handleCategoryColorSave(category, e.target.value)}
-                                className="w-6 h-6 rounded cursor-pointer border border-gray-300 justify-self-start"
-                                title="Custom color"
-                              />
+                              {/* 4th row: 9 preset colors + 1 custom color input */}
+                              {presetColors.slice(30).map((color) => (
+                                <button
+                                  key={color}
+                                  onClick={() => handleCategoryColorSave(category, color)}
+                                  className="w-6 h-6 rounded border-2 shadow-sm hover:scale-110 transition-transform justify-self-start"
+                                  style={{
+                                    backgroundColor: color,
+                                    borderColor: 'white'
+                                  }}
+                                  title={`Set color to ${color}`}
+                                />
+                              ))}
+                              {/* Custom color input as 10th item in 4th row */}
+                              <div className="relative justify-self-start">
+                                <input
+                                  type="color"
+                                  value={customCategoryColors[category] || '#3B82F6'}
+                                  onChange={(e) => handleCategoryColorSave(category, e.target.value)}
+                                  className="w-6 h-6 rounded cursor-pointer border-2 justify-self-start"
+                                  style={{ 
+                                    borderColor: '#6366F1',
+                                    borderStyle: 'dashed',
+                                    borderWidth: '2px'
+                                  }}
+                                  title="Custom color picker"
+                                />
+                                <div 
+                                  className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center"
+                                  style={{ 
+                                    backgroundColor: '#6366F1',
+                                    border: '1px solid white'
+                                  }}
+                                  title="Custom color"
+                                >
+                                  <Palette size={8} style={{ color: 'white' }} />
+                                </div>
+                              </div>
                             </div>
-                            <div className="mt-2 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                              Pick a color
+                            {/* Close button below everything */}
+                            <div className="mt-3 flex items-center justify-center">
+                              <button
+                                onClick={handleCategoryColorCancel}
+                                className="px-3 py-1.5 rounded transition-colors flex items-center justify-center gap-1.5 text-sm"
+                                style={{ 
+                                  color: 'var(--color-text-primary)',
+                                  backgroundColor: 'var(--color-surface)',
+                                  border: '1px solid var(--color-border)'
+                                }}
+                                title="Close color picker"
+                              >
+                                <XIcon size={16} />
+                                <span>Close</span>
+                              </button>
                             </div>
                           </div>
                         ) : (
@@ -936,8 +1118,8 @@ export function MyToolsPage() {
                               onClick={() => handleCategoryColorEdit(category)}
                               className="p-1.5 rounded-lg transition-all opacity-60 hover:opacity-100 group-hover:opacity-100"
                               style={{ 
-                                color: getCategoryColor(category),
-                                backgroundColor: 'var(--color-surface-elevated)'
+                                color: '#FFFFFF',
+                                backgroundColor: '#000000'
                               }}
                               title="Change group color"
                             >
@@ -945,11 +1127,10 @@ export function MyToolsPage() {
                             </button>
                             <button
                               onClick={() => handleCategoryLabelEdit(category)}
-                              className="p-1.5 rounded-lg transition-all hover:bg-gray-200"
+                              className="p-1.5 rounded-lg transition-all"
                               style={{ 
-                                color: 'var(--color-text-primary)',
-                                backgroundColor: 'var(--color-surface-elevated)',
-                                border: '1px solid var(--color-border)'
+                                color: '#FFFFFF',
+                                backgroundColor: '#000000'
                               }}
                               title="Edit group name"
                             >
@@ -957,11 +1138,10 @@ export function MyToolsPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteCustomGroup(category)}
-                              className="p-1.5 rounded-lg transition-all hover:bg-gray-200"
+                              className="p-1.5 rounded-lg transition-all"
                               style={{ 
-                                color: 'var(--color-error)',
-                                backgroundColor: 'var(--color-surface-elevated)',
-                                border: '1px solid var(--color-border)'
+                                color: '#FFFFFF',
+                                backgroundColor: '#000000'
                               }}
                               title={customCategoryLabels[category] ? "Delete custom group (reset to default)" : "Reset group to default"}
                             >
@@ -1010,16 +1190,14 @@ export function MyToolsPage() {
                       draggedIndex === globalIndex ? 'opacity-50' : ''
                     } ${
                       tool.is_personal ? '' : ''
-                    } transition-all duration-200 cursor-move ${
+                    } transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       viewMode === 'grid' ? 'hover:-translate-y-2 hover:shadow-2xl' : ''
                     }`}
                     style={{
                       border: dragOverIndex === globalIndex 
                         ? `2px solid ${getCategoryColor(category)}` 
-                        : tool.is_personal 
-                          ? `2px solid ${getCategoryColorWithOpacity(category, 0.3)}`
-                          : 'none',
-                      backgroundColor: tool.is_personal ? getCategoryColorWithOpacity(category, 0.05) : undefined,
+                        : `2px solid ${getCategoryColorWithOpacity(category, 0.3)}`,
+                      backgroundColor: '#FFFFFF',
                       boxShadow: dragOverIndex === globalIndex ? `0 0 0 2px ${getCategoryColorWithOpacity(category, 0.2)}` : undefined,
                     }}
                     draggable={true}
@@ -1049,9 +1227,9 @@ export function MyToolsPage() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-2">
                             <div className="p-3 rounded-lg" style={{ backgroundColor: getCategoryColorWithOpacity(category, 0.1) }}>
-                              <Link2 size={24} style={{ color: getCategoryColor(category) }} strokeWidth={1.5} />
+                              <Wrench size={24} style={{ color: getCategoryColor(category) }} strokeWidth={1.5} />
                             </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" title="Drag to reorder">
+                            <div className="hidden" title="Drag to reorder">
                               <GripVertical size={16} style={{ color: 'var(--color-text-tertiary)' }} />
                             </div>
                           </div>
@@ -1068,12 +1246,20 @@ export function MyToolsPage() {
                             )}
                             {tool.is_personal && (
                               <>
-                                <span className="text-xs px-2 py-1 rounded-full font-medium shadow-sm text-white whitespace-nowrap" style={{ backgroundColor: getCategoryColor(category) }}>Personal Tool</span>
+                                <span 
+                                  className="text-xs px-2 py-1 rounded-full font-medium shadow-sm whitespace-nowrap" 
+                                  style={{ 
+                                    backgroundColor: getCategoryColor(category),
+                                    color: getTextColorForBackground(getCategoryColor(category))
+                                  }}
+                                >
+                                  Personal Tool
+                                </span>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
                                     onClick={() => handleEdit(tool)}
                                     className="p-2 rounded-lg transition-colors z-10"
-                                    style={{ color: 'var(--color-text-secondary)' }}
+                                    style={{ color: '#FFFFFF', backgroundColor: '#000000' }}
                                     title="Edit tool"
                                   >
                                     <Pencil size={16} />
@@ -1081,7 +1267,7 @@ export function MyToolsPage() {
                                   <button
                                     onClick={() => handleDelete(tool.id)}
                                     className="p-2 rounded-lg transition-colors z-10"
-                                    style={{ color: 'var(--color-error)' }}
+                                    style={{ color: '#FFFFFF', backgroundColor: '#000000' }}
                                     title="Delete tool"
                                   >
                                     <Trash2 size={16} />
@@ -1097,8 +1283,11 @@ export function MyToolsPage() {
                         <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>{tool.description}</p>
                         <div className="flex items-center justify-between">
                           <span 
-                            className="text-xs px-2 py-1 rounded-full font-medium text-white"
-                            style={{ backgroundColor: 'var(--color-surface-elevated)' }}
+                            className="text-xs px-2 py-1 rounded-full font-medium"
+                            style={{ 
+                              backgroundColor: getCategoryColor(tool.category),
+                              color: getTextColorForBackground(getCategoryColor(tool.category))
+                            }}
                           >
                             {getDefaultCategoryLabel(tool.category)}
                           </span>
@@ -1116,11 +1305,11 @@ export function MyToolsPage() {
                     ) : (
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" title="Drag to reorder">
+                          <div className="hidden" title="Drag to reorder">
                             <GripVertical size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                           </div>
                           <div className="p-2 rounded-lg" style={{ backgroundColor: getCategoryColorWithOpacity(category, 0.1) }}>
-                            <Link2 size={20} style={{ color: getCategoryColor(category) }} strokeWidth={1.5} />
+                            <Wrench size={20} style={{ color: getCategoryColor(category) }} strokeWidth={1.5} />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
@@ -1139,12 +1328,20 @@ export function MyToolsPage() {
                               )}
                               {tool.is_personal && (
                                 <>
-                                  <span className="text-xs px-2 py-1 rounded-full font-medium text-white whitespace-nowrap" style={{ backgroundColor: getCategoryColor(category) }}>Personal Tool</span>
+                                  <span 
+                                    className="text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap" 
+                                    style={{ 
+                                      backgroundColor: getCategoryColor(category),
+                                      color: getTextColorForBackground(getCategoryColor(category))
+                                    }}
+                                  >
+                                    Personal Tool
+                                  </span>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                       onClick={() => handleEdit(tool)}
                                       className="p-1 rounded transition-colors"
-                                      style={{ color: 'var(--color-text-secondary)' }}
+                                      style={{ color: '#FFFFFF', backgroundColor: '#000000' }}
                                       title="Edit tool"
                                     >
                                       <Pencil size={14} />
@@ -1152,7 +1349,7 @@ export function MyToolsPage() {
                                     <button
                                       onClick={() => handleDelete(tool.id)}
                                       className="p-1 rounded transition-colors"
-                                      style={{ color: 'var(--color-error)' }}
+                                      style={{ color: '#FFFFFF', backgroundColor: '#000000' }}
                                       title="Delete tool"
                                     >
                                       <Trash2 size={14} />
@@ -1166,8 +1363,11 @@ export function MyToolsPage() {
                         </div>
                         <div className="flex items-center gap-4">
                           <span 
-                            className="text-xs px-2 py-1 rounded-full font-medium text-white"
-                            style={{ backgroundColor: 'var(--color-surface-elevated)' }}
+                            className="text-xs px-2 py-1 rounded-full font-medium"
+                            style={{ 
+                              backgroundColor: getCategoryColor(tool.category),
+                              color: getTextColorForBackground(getCategoryColor(tool.category))
+                            }}
                           >
                             {getDefaultCategoryLabel(tool.category)}
                           </span>
@@ -1306,13 +1506,22 @@ export function MyToolsPage() {
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2"
                   style={{ 
-                    backgroundColor: 'var(--color-surface-elevated)', 
-                    color: 'var(--color-text-primary)',
+                    backgroundColor: '#000000', 
+                    color: '#FFFFFF',
                     border: '1px solid var(--color-border)'
                   }}
                 >
                   {categories.filter((c) => c !== 'All').map((category) => (
-                    <option key={category} value={category}>{getCategoryLabel(category)}</option>
+                    <option 
+                      key={category} 
+                      value={category}
+                      style={{ 
+                        backgroundColor: '#000000', 
+                        color: '#FFFFFF' 
+                      }}
+                    >
+                      {getCategoryLabel(category)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -1332,6 +1541,78 @@ export function MyToolsPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Tool Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-xl shadow-elevated w-full max-w-md" style={{ backgroundColor: 'var(--color-surface)' }}>
+            <div className="p-6 text-center">
+              <div className="text-6xl mb-4">😢</div>
+              <h2 className="text-xl font-serif font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+                Are you sure you want to delete this tool?
+              </h2>
+              <div className="flex gap-3 justify-center mt-6">
+                <button
+                  onClick={cancelDelete}
+                  className="px-6 py-2.5 rounded-lg font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: '#000000',
+                    color: '#FFFFFF'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-6 py-2.5 rounded-lg font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: '#000000',
+                    color: '#FFFFFF'
+                  }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Confirmation Modal */}
+      {deleteGroupConfirmOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-xl shadow-elevated w-full max-w-md" style={{ backgroundColor: 'var(--color-surface)' }}>
+            <div className="p-6 text-center">
+              <div className="text-6xl mb-4">😢</div>
+              <h2 className="text-xl font-serif font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+                {groupDeleteMessage}
+              </h2>
+              <div className="flex gap-3 justify-center mt-6">
+                <button
+                  onClick={cancelDeleteGroup}
+                  className="px-6 py-2.5 rounded-lg font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: '#000000',
+                    color: '#FFFFFF'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteGroup}
+                  className="px-6 py-2.5 rounded-lg font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: '#000000',
+                    color: '#FFFFFF'
+                  }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

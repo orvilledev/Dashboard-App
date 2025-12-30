@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Card, Button, Input } from '@/components/ui';
-import { Users, Check, Clock, X, AlertCircle, Loader2, UserPlus, Shield, Plus, Eye } from 'lucide-react';
+import { Users, Check, Clock, X, AlertCircle, Loader2, UserPlus, Shield, Plus, Eye, ChevronDown } from 'lucide-react';
 import { api } from '@/api';
 import { useAuth } from '@/hooks';
 
@@ -56,6 +56,7 @@ interface PaginatedResponse<T> {
 
 export function TeamPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { getToken } = useClerkAuth();
   const { backendUser, isAdmin } = useAuth();
   
@@ -73,6 +74,9 @@ export function TeamPage() {
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamDescription, setNewTeamDescription] = useState('');
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [teamView, setTeamView] = useState<'all' | 'my'>('all');
+  const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
+  const teamDropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch data from API
   useEffect(() => {
@@ -101,6 +105,27 @@ export function TeamPage() {
 
     fetchData();
   }, [getToken]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (teamDropdownRef.current && !teamDropdownRef.current.contains(event.target as Node)) {
+        setIsTeamDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Check current route to set initial view
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/teams/') && path !== '/teams') {
+      setTeamView('my');
+    } else {
+      setTeamView('all');
+    }
+  }, [location.pathname]);
 
   const handleJoinRequest = async (team: ApiTeam) => {
     setSelectedTeam(team);
@@ -233,17 +258,107 @@ export function TeamPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-serif font-bold text-theme-primary mb-2">Teams</h1>
           <p className="text-theme-secondary">
             Join teams to collaborate with your colleagues and access shared resources.
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-            <Plus size={18} /> Create Team
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Team View Dropdown */}
+          <div ref={teamDropdownRef} className="relative">
+            <button
+              onClick={() => setIsTeamDropdownOpen(!isTeamDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+              style={{
+                backgroundColor: '#000000',
+                color: '#FFFFFF'
+              }}
+            >
+              <span className="font-medium">
+                {teamView === 'all' ? 'All Teams' : 'My Team'}
+              </span>
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${isTeamDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isTeamDropdownOpen && (
+              <div
+                className="absolute top-full rounded-lg shadow-lg overflow-hidden z-50 min-w-[160px]"
+                style={{
+                  right: '50%',
+                  marginTop: '4px',
+                  backgroundColor: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)'
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setTeamView('all');
+                    setIsTeamDropdownOpen(false);
+                    navigate('/teams');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left"
+                  style={{
+                    backgroundColor: teamView === 'all' ? '#000000' : 'transparent',
+                    color: teamView === 'all' ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (teamView !== 'all') {
+                      e.currentTarget.style.backgroundColor = '#000000';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (teamView !== 'all') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-text-secondary)';
+                    }
+                  }}
+                >
+                  <span className="font-medium text-sm">All Teams</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTeamView('my');
+                    setIsTeamDropdownOpen(false);
+                    const myTeams = teams.filter(t => t.is_member);
+                    if (myTeams.length > 0) {
+                      navigate(`/teams/${myTeams[0].id}`);
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left"
+                  style={{
+                    backgroundColor: teamView === 'my' ? '#000000' : 'transparent',
+                    color: teamView === 'my' ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (teamView !== 'my') {
+                      e.currentTarget.style.backgroundColor = '#000000';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (teamView !== 'my') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-text-secondary)';
+                    }
+                  }}
+                >
+                  <span className="font-medium text-sm">My Team</span>
+                </button>
+              </div>
+            )}
+          </div>
+          {isAdmin && (
+            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+              <Plus size={18} /> Create Team
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Pending Join Requests for Admins */}
@@ -254,7 +369,7 @@ export function TeamPage() {
             <div className="divide-y divide-theme-light">
               {joinRequests.map((request) => (
                 <div key={request.id} className="flex items-center gap-4 p-4 hover:bg-theme-surface-elevated transition-colors">
-                  <div className="w-10 h-10 bg-theme-primary rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-soft">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-soft" style={{ backgroundColor: '#000000' }}>
                     {request.user.full_name?.charAt(0) || request.user.email?.charAt(0) || 'U'}
                   </div>
                   <div className="flex-1 min-w-0">

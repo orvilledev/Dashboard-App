@@ -6,35 +6,11 @@ from datetime import timedelta
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from core_api.permissions import IsAdminOrReadOnly, IsAuthenticatedOrReadOnlyInDebug
 from users.models import User
 from users.serializers import UserSerializer
 from .models import Team, TeamMember, TeamInvite, TeamJoinRequest
 from .serializers import TeamSerializer, TeamMemberSerializer, TeamInviteSerializer, TeamJoinRequestSerializer
-
-
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """Custom permission to only allow admins to edit."""
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        # Allow if user is admin, superuser, or staff
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return request.user.is_admin or request.user.is_superuser or request.user.is_staff
-
-
-class IsAuthenticatedOrReadOnlyInDebug(permissions.BasePermission):
-    """
-    Allow read access without authentication in DEBUG mode.
-    Require authentication for write operations always.
-    """
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            # Allow read access in DEBUG mode without auth
-            if settings.DEBUG:
-                return True
-            return request.user and request.user.is_authenticated
-        return request.user and request.user.is_authenticated
 
 
 class TeamViewSet(viewsets.ModelViewSet):

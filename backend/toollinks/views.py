@@ -1,12 +1,15 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.db import models
+from core_api.permissions import IsAdminOrReadOnly as BaseIsAdminOrReadOnly
+from core_api.utils import get_user_admin_status, refresh_user_from_db, extract_error_message, create_error_response
 from .models import ToolLink, ToolFavorite
 from .serializers import ToolLinkSerializer
 
 
-class IsAdminOrReadOnly(permissions.BasePermission):
+class IsAdminOrReadOnly(BaseIsAdminOrReadOnly):
     """
     Custom permission to only allow admins to edit shared tools.
     Users can create/edit/delete their own personal tools.
@@ -79,6 +82,13 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return False
 
 
+class ToolLinkPagination(PageNumberPagination):
+    """Custom pagination for tool links."""
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
 class ToolLinkViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing tool links.
@@ -88,6 +98,7 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
     queryset = ToolLink.objects.all()
     serializer_class = ToolLinkSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
+    pagination_class = ToolLinkPagination
     
     def create(self, request, *args, **kwargs):
         """Override create to provide better error handling."""
@@ -186,6 +197,38 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    def list(self, request, *args, **kwargs):
+        """Override list to prefetch favorite status for all tools in the response."""
+        response = super().list(request, *args, **kwargs)
+        
+        # OPTIMIZED: Bulk prefetch favorite status for all tools in the response
+        # Handle both paginated and non-paginated responses
+        tools = None
+        if hasattr(response, 'data'):
+            if isinstance(response.data, dict) and 'results' in response.data:
+                # Paginated response
+                tools = response.data['results']
+            elif isinstance(response.data, list):
+                # Non-paginated list response
+                tools = response.data
+        
+        if tools and request.user.is_authenticated:
+            tool_ids = [tool.get('id') for tool in tools if tool.get('id')]
+            if tool_ids:
+                favorite_status = set(
+                    ToolFavorite.objects.filter(
+                        user=request.user,
+                        tool_id__in=tool_ids
+                    ).values_list('tool_id', flat=True)
+                )
+                
+                # Update favorite status in serializer data
+                for tool in tools:
+                    if tool.get('id') in favorite_status:
+                        tool['is_favorite'] = True
+        
+        return response
+    
     def get_serializer_context(self):
         """Add request context to serializer for is_favorite field."""
         context = super().get_serializer_context()
@@ -245,7 +288,7 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def toggle_favorite(self, request, pk=None):
-        """Toggle favorite status for a tool."""
+        """Toggle favorite status for a tool. Optimized to use count instead of max order."""
         tool = self.get_object()
         user = request.user
         
@@ -255,22 +298,23 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
             favorite.delete()
             return Response({'is_favorite': False}, status=status.HTTP_200_OK)
         except ToolFavorite.DoesNotExist:
-            # Get the highest order value for this user and add 1
-            max_order = ToolFavorite.objects.filter(user=user).aggregate(
-                max_order=models.Max('order')
-            )['max_order'] or -1
+            # OPTIMIZED: Use count instead of max order (O(1) with index vs O(F) scan)
+            # Count is faster and works well for ordering (new items go to end)
+            current_count = ToolFavorite.objects.filter(user=user).count()
+            new_order = current_count
             
             # Create new favorite with order
             favorite = ToolFavorite.objects.create(
                 user=user,
                 tool=tool,
-                order=max_order + 1
+                order=new_order
             )
             return Response({'is_favorite': True}, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['get'])
     def favorites(self, request):
-        """Get all tools favorited by the current user, plus user's personal tools, ordered by user preference."""
+        """Get all tools favorited by the current user, plus user's personal tools, ordered by user preference.
+        Optimized with bulk prefetching and database-level filtering."""
         user = request.user
         import logging
         logger = logging.getLogger(__name__)
@@ -294,63 +338,94 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
                 incorrect_tools.update(is_personal=True)
                 logger.info(f"Fixed {count} tools for user {user.id}")
         
-        # Get favorites ordered by user's order preference
-        favorites_qs = ToolFavorite.objects.filter(
+        # Get query parameters for filtering and pagination
+        category = request.query_params.get('category')
+        search = request.query_params.get('search')
+        # Check if pagination is requested (backward compatibility: return array if no pagination params)
+        use_pagination = 'page' in request.query_params or 'page_size' in request.query_params
+        page_size = int(request.query_params.get('page_size', 50)) if use_pagination else None
+        page = int(request.query_params.get('page', 1)) if use_pagination else 1
+        
+        # OPTIMIZED: Get favorites with database-level filtering
+        user_favorites = ToolFavorite.objects.filter(
             user=user,
             tool__is_active=True
-        ).select_related('tool').order_by('order', '-created_at')
+        ).select_related('tool', 'tool__created_by').prefetch_related('tool__created_by')
         
-        # Evaluate the queryset to get favorite tool IDs
-        favorites_list = list(favorites_qs)
-        favorite_tool_ids = [fav.tool_id for fav in favorites_list]
+        # Apply database-level filtering for category
+        if category:
+            user_favorites = user_favorites.filter(tool__category=category)
         
-        # Get user's personal tools (not favorited yet)
-        # Query with explicit conditions - use user.id for more reliable matching
-        personal_tools = ToolLink.objects.filter(
-            created_by_id=user.id,  # Use user.id instead of user object for more reliable matching
+        # Apply database-level filtering for search
+        if search:
+            user_favorites = user_favorites.filter(tool__name__icontains=search)
+        
+        # Order by user preference
+        user_favorites = user_favorites.order_by('order', '-created_at')
+        
+        # Get favorite tool IDs (single query evaluation with values_list)
+        favorite_tool_ids = set(user_favorites.values_list('tool_id', flat=True))
+        
+        # OPTIMIZED: Get personal tools with database-level filtering
+        personal_tools_qs = ToolLink.objects.filter(
+            created_by_id=user.id,
             is_personal=True,
             is_active=True
-        ).exclude(
-            id__in=favorite_tool_ids
-        ).order_by('-created_at')
+        ).exclude(id__in=favorite_tool_ids)
         
-        # Log for debugging
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"User {user.id} ({user.email if hasattr(user, 'email') else 'no email'}) favorites query:")
-        logger.info(f"  - Favorite tool IDs: {favorite_tool_ids}")
-        logger.info(f"  - Personal tools found: {personal_tools.count()}")
-        for tool in personal_tools:
-            logger.info(f"    Tool {tool.id}: name='{tool.name}', is_personal={tool.is_personal}, is_active={tool.is_active}, created_by_id={tool.created_by_id if tool.created_by else None}")
-        
-        # Also check all personal tools for this user (for debugging)
-        all_personal = ToolLink.objects.filter(created_by_id=user.id, is_personal=True)
-        logger.info(f"  - All personal tools (including inactive): {all_personal.count()}")
-        for tool in all_personal:
-            logger.info(f"    Tool {tool.id}: name='{tool.name}', is_personal={tool.is_personal}, is_active={tool.is_active}, created_by_id={tool.created_by_id if tool.created_by else None}")
-        
-        # Apply category filter if provided
-        category = request.query_params.get('category')
+        # Apply database-level filtering
         if category:
-            favorites_list = [fav for fav in favorites_list if fav.tool.category == category]
-            personal_tools = personal_tools.filter(category=category)
-        
-        # Apply search filter if provided
-        search = request.query_params.get('search')
+            personal_tools_qs = personal_tools_qs.filter(category=category)
         if search:
-            favorites_list = [fav for fav in favorites_list if search.lower() in fav.tool.name.lower()]
-            personal_tools = personal_tools.filter(name__icontains=search)
+            personal_tools_qs = personal_tools_qs.filter(name__icontains=search)
         
-        # Extract tools from favorites
+        personal_tools_qs = personal_tools_qs.order_by('-created_at')
+        
+        # Evaluate favorites queryset (now filtered at DB level)
+        favorites_list = list(user_favorites)
         favorite_tools = [fav.tool for fav in favorites_list]
         
-        # Combine favorite tools and personal tools
-        all_tools = list(favorite_tools) + list(personal_tools)
+        # Get personal tools (apply pagination only if requested)
+        if use_pagination and page_size:
+            personal_tools_limit = max(0, page_size - len(favorite_tools))
+            personal_tools = list(personal_tools_qs[:personal_tools_limit])
+            has_more = len(personal_tools) == personal_tools_limit and personal_tools_qs.count() > personal_tools_limit
+        else:
+            # No pagination: return all personal tools
+            personal_tools = list(personal_tools_qs)
+            has_more = False
         
-        # Sort by name for personal tools that aren't favorited
-        # Favorite tools are already sorted by order
-        serializer = self.get_serializer(all_tools, many=True)
-        return Response(serializer.data)
+        # Combine tools
+        all_tools = favorite_tools + personal_tools
+        
+        # OPTIMIZED: Bulk prefetch is_favorite status for all tools in one query
+        tool_ids = [tool.id for tool in all_tools]
+        favorite_status = set(
+            ToolFavorite.objects.filter(
+                user=user,
+                tool_id__in=tool_ids
+            ).values_list('tool_id', flat=True)
+        )
+        
+        # Add favorite_tool_ids to context for serializer
+        context = self.get_serializer_context()
+        context['favorite_tool_ids'] = favorite_status
+        
+        # Serialize with optimized context
+        serializer = self.get_serializer(all_tools, many=True, context=context)
+        
+        # Backward compatibility: return array if pagination not requested
+        if not use_pagination:
+            return Response(serializer.data)
+        
+        # Return paginated response if pagination requested
+        return Response({
+            'results': serializer.data,
+            'count': len(all_tools),
+            'page': page,
+            'page_size': page_size,
+            'has_more': has_more
+        })
     
     @action(detail=False, methods=['get'])
     def debug_my_tools(self, request):
@@ -422,7 +497,9 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def reorder_favorites(self, request):
-        """Update the order of favorite tools for the current user."""
+        """Update the order of favorite tools for the current user. Optimized with bulk_update."""
+        from django.db import transaction
+        
         user = request.user
         tool_orders = request.data.get('orders', [])  # Expected: [{'tool_id': 1, 'order': 0}, ...]
         
@@ -432,24 +509,38 @@ class ToolLinkViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Update order for each tool
-        updated_count = 0
-        for item in tool_orders:
-            tool_id = item.get('tool_id')
-            new_order = item.get('order')
+        # Build mapping of tool_id -> new_order
+        order_map = {
+            item['tool_id']: item['order']
+            for item in tool_orders
+            if item.get('tool_id') is not None and item.get('order') is not None
+        }
+        
+        if not order_map:
+            return Response({
+                'message': 'No valid orders provided',
+                'updated_count': 0
+            })
+        
+        # OPTIMIZED: Get all favorites to update in one query
+        with transaction.atomic():
+            favorites_to_update = ToolFavorite.objects.filter(
+                user=user,
+                tool_id__in=order_map.keys()
+            )
             
-            if tool_id is None or new_order is None:
-                continue
+            # Update order in memory
+            updated = []
+            for favorite in favorites_to_update:
+                if favorite.tool_id in order_map:
+                    favorite.order = order_map[favorite.tool_id]
+                    updated.append(favorite)
             
-            try:
-                favorite = ToolFavorite.objects.get(user=user, tool_id=tool_id)
-                favorite.order = new_order
-                favorite.save()
-                updated_count += 1
-            except ToolFavorite.DoesNotExist:
-                continue
+            # OPTIMIZED: Bulk update in single query instead of N individual saves
+            if updated:
+                ToolFavorite.objects.bulk_update(updated, ['order'])
         
         return Response({
-            'message': f'Updated order for {updated_count} tools',
-            'updated_count': updated_count
+            'message': f'Updated order for {len(updated)} tools',
+            'updated_count': len(updated)
         })

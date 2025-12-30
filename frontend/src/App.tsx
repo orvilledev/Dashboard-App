@@ -3,7 +3,7 @@ import { ClerkProvider, SignedIn, SignedOut, SignIn, SignUp } from '@clerk/clerk
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AppLayout } from '@/components/layout';
-import { LandingPage, Dashboard, ToolsPage, MyToolsPage, TasksPage, TeamPage, TeamDetailPage, JoinTeamPage, SettingsPage, MemberProfilePage } from '@/pages';
+import { LandingPage, Dashboard, ToolsPage, MyToolsPage, TasksPage, TeamPage, TeamDetailPage, JoinTeamPage, SettingsPage, MemberProfilePage, LeaveSchedulePage } from '@/pages';
 import { HandPulseIcon } from '@/components/icons/HandPulseIcon';
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -150,6 +150,7 @@ function AppRoutes() {
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/my-tools" element={<MyToolsPage />} />
         <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/leave-schedule" element={<LeaveSchedulePage />} />
         <Route path="/teams" element={<TeamPage />} />
         <Route path="/teams/:teamId" element={<TeamDetailPage />} />
         <Route path="/join-team" element={<JoinTeamPage />} />

@@ -4,18 +4,9 @@ from django.conf import settings
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from core_api.permissions import IsAdminOrReadOnly
 from .models import Document
 from .serializers import DocumentSerializer, DocumentUploadRequestSerializer
-
-
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """Custom permission to only allow admins to edit."""
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return request.user.is_admin or request.user.is_superuser or request.user.is_staff
 
 
 class DocumentViewSet(viewsets.ModelViewSet):

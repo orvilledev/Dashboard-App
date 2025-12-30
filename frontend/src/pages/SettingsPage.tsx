@@ -169,7 +169,7 @@ export function SettingsPage() {
             <div className="relative">
               <div 
                 className="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-medium overflow-hidden"
-                style={{ backgroundColor: 'var(--color-primary)' }}
+                style={{ backgroundColor: '#000000' }}
               >
                 {clerkUser?.imageUrl ? (
                   <img

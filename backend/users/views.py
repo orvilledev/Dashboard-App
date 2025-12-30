@@ -7,8 +7,8 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import os
-from .models import User, UserPreferences
-from .serializers import UserSerializer
+from .models import User, UserPreferences, LeaveSchedule
+from .serializers import UserSerializer, LeaveScheduleSerializer
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -129,7 +129,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             'dashboard_active_widgets': preferences.dashboard_active_widgets,
             'clock_widget_timezones': preferences.clock_widget_timezones,
             'mood_widget_current': preferences.mood_widget_current,
-            'mood_widget_history': preferences.mood_widget_history
+            'mood_widget_history': preferences.mood_widget_history,
+            'custom_widgets': preferences.custom_widgets,
+            'alarm_widget_alarms': preferences.alarm_widget_alarms
         })
     
     @action(detail=False, methods=['post'])
@@ -267,6 +269,30 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
+        # Update custom widgets if provided
+        if 'custom_widgets' in request.data:
+            custom_widgets = request.data['custom_widgets']
+            if isinstance(custom_widgets, dict):
+                preferences.custom_widgets = custom_widgets
+                updated = True
+            else:
+                return Response(
+                    {'error': 'custom_widgets must be a dictionary'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Update alarm widget alarms if provided
+        if 'alarm_widget_alarms' in request.data:
+            alarm_alarms = request.data['alarm_widget_alarms']
+            if isinstance(alarm_alarms, list):
+                preferences.alarm_widget_alarms = alarm_alarms
+                updated = True
+            else:
+                return Response(
+                    {'error': 'alarm_widget_alarms must be a list'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
         if updated:
             preferences.save()
             return Response({
@@ -280,10 +306,33 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                 'dashboard_active_widgets': preferences.dashboard_active_widgets,
                 'clock_widget_timezones': preferences.clock_widget_timezones,
                 'mood_widget_current': preferences.mood_widget_current,
-                'mood_widget_history': preferences.mood_widget_history
+                'mood_widget_history': preferences.mood_widget_history,
+                'alarm_widget_alarms': preferences.alarm_widget_alarms
             })
         
         return Response(
             {'error': 'No preferences provided'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class LeaveScheduleViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing leave schedules.
+    Users can only manage their own leaves.
+    """
+    serializer_class = LeaveScheduleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Return only the current user's leave schedules."""
+        return LeaveSchedule.objects.filter(user=self.request.user).order_by('-start_date')
+    
+    def perform_create(self, serializer):
+        """Set the user to the current user when creating a leave schedule."""
+        serializer.save(user=self.request.user)
+    
+    def perform_update(self, serializer):
+        """Update leave schedule - ensure user can only update their own."""
+        serializer.save()
+

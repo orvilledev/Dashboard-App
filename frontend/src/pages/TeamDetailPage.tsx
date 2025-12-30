@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Card, Button, Input } from '@/components/ui';
-import { Users, ArrowLeft, Shield, ShieldCheck, Loader2, AlertCircle, Camera, X, Upload } from 'lucide-react';
+import { Users, ArrowLeft, Shield, ShieldCheck, Loader2, AlertCircle, Camera, X, Upload, ChevronDown } from 'lucide-react';
 import { api } from '@/api';
 import { useAuth } from '@/hooks';
 
@@ -89,6 +89,10 @@ export function TeamDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [uploadMethod, setUploadMethod] = useState<'url' | 'file'>('file');
+  const [teamView, setTeamView] = useState<'all' | 'my'>('my');
+  const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
+  const teamDropdownRef = useRef<HTMLDivElement>(null);
+  const [allTeams, setAllTeams] = useState<ApiTeam[]>([]);
 
   useEffect(() => {
     async function fetchTeamData() {
@@ -104,13 +108,15 @@ export function TeamDetailPage() {
       try {
         const token = await getToken?.();
         
-        // Fetch team details and members in parallel
-        const [teamResponse, membersResponse] = await Promise.all([
+        // Fetch team details, members, and all teams in parallel
+        const [teamResponse, membersResponse, teamsResponse] = await Promise.all([
           api.get<ApiTeam>(`/teams/${teamId}/`, token || undefined),
           api.get<PaginatedResponse<ApiTeamMember>>(`/members/`, token || undefined),
+          api.get<PaginatedResponse<ApiTeam>>('/teams/', token || undefined),
         ]);
         
         setTeam(teamResponse);
+        setAllTeams(teamsResponse.results || []);
         // Filter members by team ID (backend returns all members, we filter by team)
         const teamMembers = (membersResponse.results || []).filter(m => m.team === parseInt(teamId));
         setMembers(teamMembers);
@@ -124,6 +130,17 @@ export function TeamDetailPage() {
 
     fetchTeamData();
   }, [teamId, getToken, refreshKey]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (teamDropdownRef.current && !teamDropdownRef.current.contains(event.target as Node)) {
+        setIsTeamDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (isLoading) {
     return (
@@ -273,7 +290,7 @@ export function TeamDetailPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
           <Button
             variant="outline"
             onClick={() => navigate('/teams')}
@@ -288,9 +305,99 @@ export function TeamDetailPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-theme-tertiary">
-          <Users size={18} />
-          <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+        <div className="flex items-center gap-3">
+          {/* Team View Dropdown */}
+          <div ref={teamDropdownRef} className="relative">
+            <button
+              onClick={() => setIsTeamDropdownOpen(!isTeamDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+              style={{
+                backgroundColor: '#000000',
+                color: '#FFFFFF'
+              }}
+            >
+              <span className="font-medium">
+                {teamView === 'all' ? 'All Teams' : 'My Team'}
+              </span>
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${isTeamDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isTeamDropdownOpen && (
+              <div
+                className="absolute top-full rounded-lg shadow-lg overflow-hidden z-50 min-w-[160px]"
+                style={{
+                  right: '50%',
+                  marginTop: '4px',
+                  backgroundColor: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)'
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setTeamView('all');
+                    setIsTeamDropdownOpen(false);
+                    navigate('/teams');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left"
+                  style={{
+                    backgroundColor: teamView === 'all' ? '#000000' : 'transparent',
+                    color: teamView === 'all' ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (teamView !== 'all') {
+                      e.currentTarget.style.backgroundColor = '#000000';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (teamView !== 'all') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-text-secondary)';
+                    }
+                  }}
+                >
+                  <span className="font-medium text-sm">All Teams</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTeamView('my');
+                    setIsTeamDropdownOpen(false);
+                    const myTeams = allTeams.filter(t => t.is_member);
+                    if (myTeams.length > 0) {
+                      navigate(`/teams/${myTeams[0].id}`);
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left"
+                  style={{
+                    backgroundColor: teamView === 'my' ? '#000000' : 'transparent',
+                    color: teamView === 'my' ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (teamView !== 'my') {
+                      e.currentTarget.style.backgroundColor = '#000000';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (teamView !== 'my') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-text-secondary)';
+                    }
+                  }}
+                >
+                  <span className="font-medium text-sm">My Team</span>
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-theme-tertiary">
+            <Users size={18} />
+            <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+          </div>
         </div>
       </div>
 
@@ -350,7 +457,7 @@ export function TeamDetailPage() {
                       onClick={() => handleChangeAvatar(member)}
                       className="absolute -bottom-1 -right-1 p-1.5 rounded-full shadow-soft transition-colors group"
                       style={{ 
-                        backgroundColor: 'var(--color-primary)',
+                        backgroundColor: '#000000',
                         border: '2px solid var(--color-surface)'
                       }}
                       title="Change profile picture"
@@ -449,9 +556,10 @@ export function TeamDetailPage() {
                   }}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
                     uploadMethod === 'file'
-                      ? 'bg-theme-primary text-white'
+                      ? 'text-white'
                       : 'bg-theme-surface text-theme-secondary hover:bg-theme-surface-elevated'
                   }`}
+                  style={uploadMethod === 'file' ? { backgroundColor: '#000000' } : {}}
                 >
                   Upload File
                 </button>
@@ -464,9 +572,10 @@ export function TeamDetailPage() {
                   }}
                   className={`flex-1 py-2 text-sm font-medium transition-colors ${
                     uploadMethod === 'url'
-                      ? 'bg-theme-primary text-white'
+                      ? 'text-white'
                       : 'bg-theme-surface text-theme-secondary hover:bg-theme-surface-elevated'
                   }`}
+                  style={uploadMethod === 'url' ? { backgroundColor: '#000000' } : {}}
                 >
                   Enter URL
                 </button>

@@ -6,7 +6,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', children, ...props }, ref) => {
+  ({ className, variant = 'default', children, style, ...props }, ref) => {
     return (
       <div
         ref={ref}
@@ -24,6 +24,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-border)',
           borderWidth: variant === 'bordered' ? '1px' : '0',
+          ...style, // Merge with provided style to allow overrides
         }}
         {...props}
       >

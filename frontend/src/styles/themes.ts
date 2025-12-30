@@ -42,8 +42,8 @@ export const themes: Record<string, Theme> = {
       surfaceElevated: '#4a4a4a', // Dark grey for hover
       
       textPrimary: '#000000',      // Pure black for primary text
-      textSecondary: '#4a4a4a',    // Dark grey for secondary text
-      textTertiary: '#6b6b6b',     // Medium grey for tertiary text
+      textSecondary: '#1a1a1a',    // Very dark grey for secondary text (darker)
+      textTertiary: '#2d2d2d',     // Dark grey for tertiary text (darker)
       
       primary: '#2d2d2d',          // Dark grey for primary elements
       primaryHover: '#1a1a1a',    // Darker grey on hover
@@ -99,8 +99,8 @@ export const themes: Record<string, Theme> = {
       textSecondary: '#0e7490',    // Medium teal
       textTertiary: '#64748b',     // Gray-blue
       
-      primary: '#14b8a6',          // Bright turquoise from middle gradient
-      primaryHover: '#0d9488',     // Darker turquoise
+      primary: '#115e67',          // Dark teal (matching textPrimary for buttons)
+      primaryHover: '#0d4a52',     // Darker teal for hover
       primaryLight: '#ccfbf1',     // Light teal tint
       
       border: '#5eead4',           // Light turquoise border

@@ -3,7 +3,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Card, Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { api } from '@/api';
-import { Plus, ExternalLink, Pencil, Trash2, X, Link2, Loader2, AlertCircle, Star } from 'lucide-react';
+import { Plus, ExternalLink, Pencil, Trash2, X, Wrench, Loader2, AlertCircle, Star } from 'lucide-react';
 
 interface Tool {
   id: number;
@@ -200,7 +200,7 @@ export function ToolsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>Tools</h1>
+          <h1 className="text-3xl font-serif font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>Public Tools</h1>
           <p style={{ color: 'var(--color-text-secondary)' }}>Quick access to all your team's essential tools and resources.</p>
         </div>
         {isAdmin && (
@@ -218,7 +218,7 @@ export function ToolsPage() {
             onClick={() => setSelectedCategory(category)}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={{
-              backgroundColor: selectedCategory === category ? 'var(--color-primary)' : 'var(--color-surface)',
+              backgroundColor: selectedCategory === category ? '#000000' : 'var(--color-surface)',
               color: selectedCategory === category ? 'white' : 'var(--color-text-secondary)',
               border: selectedCategory === category ? 'none' : '1px solid var(--color-border)',
             }}
@@ -234,7 +234,7 @@ export function ToolsPage() {
           <Card key={tool.id} variant="elevated" className="group cursor-pointer transition-all duration-200 hover:-translate-y-2 hover:shadow-2xl">
             <div className="flex items-start justify-between mb-4">
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--color-primary-light)' }}>
-                <Link2 size={24} style={{ color: 'var(--color-primary)' }} strokeWidth={1.5} />
+                <Wrench size={24} style={{ color: 'var(--color-primary)' }} strokeWidth={1.5} />
               </div>
               <div className="flex gap-1">
                 <button
@@ -295,7 +295,7 @@ export function ToolsPage() {
       {filteredTools.length === 0 && (
         <div className="text-center py-12">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'var(--color-surface-elevated)' }}>
-            <Link2 size={32} style={{ color: 'var(--color-text-tertiary)' }} />
+            <Wrench size={32} style={{ color: 'var(--color-text-tertiary)' }} />
           </div>
           <h3 className="font-serif text-xl mb-2" style={{ color: 'var(--color-text-primary)' }}>No tools found</h3>
           <p style={{ color: 'var(--color-text-secondary)' }}>

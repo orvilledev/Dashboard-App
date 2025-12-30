@@ -27,14 +27,32 @@ export async function apiClient<T>(
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+      // Read response as text first, then try to parse as JSON
+      const text = await response.text();
+      let error;
+      
+      try {
+        error = JSON.parse(text);
+      } catch (e) {
+        // If not JSON, use the text as error message
+        throw new Error(`Server error (${response.status}): ${text || 'An error occurred'}`);
+      }
+      
+      // Handle DRF validation errors (field-specific errors)
+      if (typeof error === 'object' && !error.detail && !error.message) {
+        // This is likely a validation error with field names as keys
+        const fieldErrors = Object.entries(error)
+          .map(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [messages];
+            return `${field}: ${msgArray.join(', ')}`;
+          })
+          .join('; ');
+        throw new Error(fieldErrors || JSON.stringify(error));
+      }
+      
       // Include validation errors if present
       const errorMessage = error.detail || error.message || (typeof error === 'string' ? error : JSON.stringify(error));
-      const validationErrors = error.non_field_errors || error;
-      const fullError = validationErrors && typeof validationErrors === 'object' 
-        ? JSON.stringify(validationErrors) 
-        : errorMessage;
-      throw new Error(fullError || `HTTP error! status: ${response.status}`);
+      throw new Error(errorMessage || `HTTP error! status: ${response.status}`);
     }
 
     // Handle 204 No Content

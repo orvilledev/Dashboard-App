@@ -3,16 +3,9 @@ from django.db import DatabaseError
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from core_api.permissions import IsAdminOrReadOnly
 from .models import Task, TaskTemplate, TaskTemplateSubtask
 from .serializers import TaskSerializer, TaskTemplateSerializer, TaskTemplateCreateSerializer
-
-
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """Custom permission to only allow admins to edit."""
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user and request.user.is_admin
 
 
 class TaskViewSet(viewsets.ModelViewSet):

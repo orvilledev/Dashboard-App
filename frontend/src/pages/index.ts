@@ -8,4 +8,5 @@ export { TeamDetailPage } from './TeamDetailPage';
 export { JoinTeamPage } from './JoinTeamPage';
 export { SettingsPage } from './SettingsPage';
 export { MemberProfilePage } from './MemberProfilePage';
+export { LeaveSchedulePage } from './LeaveSchedulePage';
 

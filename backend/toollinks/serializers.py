@@ -26,7 +26,13 @@ class ToolLinkSerializer(serializers.ModelSerializer):
         return None
     
     def get_is_favorite(self, obj):
-        """Check if the current user has favorited this tool."""
+        """Check if the current user has favorited this tool using prefetched data."""
+        # First try to use prefetched favorite_tool_ids from context (optimized path)
+        favorite_tool_ids = self.context.get('favorite_tool_ids')
+        if favorite_tool_ids is not None:
+            return obj.id in favorite_tool_ids
+        
+        # Fallback to query if context not available (for single object serialization)
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             return ToolFavorite.objects.filter(user=request.user, tool=obj).exists()

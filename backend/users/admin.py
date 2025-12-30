@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from .models import User, LeaveSchedule
 
 
 @admin.register(User)
@@ -67,3 +67,24 @@ class UserAdmin(BaseUserAdmin):
                 'No usernames were updated. Users need email addresses or names to generate usernames.',
                 level='WARNING'
             )
+
+
+@admin.register(LeaveSchedule)
+class LeaveScheduleAdmin(admin.ModelAdmin):
+    list_display = ('user', 'start_date', 'end_date', 'leave_type', 'created_at')
+    list_filter = ('leave_type', 'start_date', 'end_date', 'created_at')
+    search_fields = ('user__email', 'user__username', 'user__first_name', 'user__last_name', 'reason')
+    ordering = ('-start_date',)
+    date_hierarchy = 'start_date'
+    
+    fieldsets = (
+        ('Leave Information', {
+            'fields': ('user', 'start_date', 'end_date', 'leave_type', 'reason')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')

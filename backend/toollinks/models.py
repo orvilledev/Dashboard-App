@@ -35,6 +35,11 @@ class ToolLink(models.Model):
         ordering = ['name']
         verbose_name = 'Tool Link'
         verbose_name_plural = 'Tool Links'
+        indexes = [
+            models.Index(fields=['is_active', 'is_personal', 'created_by_id']),  # For filtering
+            models.Index(fields=['category', 'is_active']),  # For category filtering
+            models.Index(fields=['name']),  # For search
+        ]
     
     def save(self, *args, **kwargs):
         """Override save to ensure non-admin users always have is_personal=True."""
@@ -82,6 +87,10 @@ class ToolFavorite(models.Model):
         verbose_name = 'Tool Favorite'
         verbose_name_plural = 'Tool Favorites'
         ordering = ['order', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'order']),  # For ordering queries
+            models.Index(fields=['user', 'tool']),   # For existence checks (already covered by unique_together, but explicit for clarity)
+        ]
     
     def __str__(self):
         return f"{self.user.email} favorited {self.tool.name}"

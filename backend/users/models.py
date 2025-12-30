@@ -260,6 +260,20 @@ class UserPreferences(models.Model):
         blank=True,
         help_text='Mood history: [{"date": "YYYY-MM-DD", "mood": "😀"}, ...]'
     )
+    # Custom widgets - stores custom widget HTML content
+    # Format: {"widget_id": {"title": "...", "html": "...", "css": "..."}, ...}
+    custom_widgets = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Custom widgets: {"widget_id": {"title": "...", "html": "...", "css": "..."}}'
+    )
+    # Alarm widget preferences
+    # Format: [{"id": "...", "time": "HH:MM", "label": "...", "enabled": true, "repeat": ["mon", "tue"], "sound": "default"}, ...]
+    alarm_widget_alarms = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Alarm list: [{"id": "...", "time": "HH:MM", "label": "...", "enabled": true, "repeat": ["mon", "tue"], "sound": "default"}, ...]'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -270,3 +284,47 @@ class UserPreferences(models.Model):
     
     def __str__(self):
         return f"Preferences for {self.user.email or self.user.username}"
+
+
+class LeaveSchedule(models.Model):
+    """Model for user leave/unavailability scheduling."""
+    
+    LEAVE_TYPE_CHOICES = [
+        ('vacation', 'Vacation'),
+        ('sick', 'Sick Leave'),
+        ('personal', 'Personal'),
+        ('other', 'Other'),
+    ]
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='leave_schedules'
+    )
+    start_date = models.DateField(help_text='Start date of the leave')
+    end_date = models.DateField(help_text='End date of the leave')
+    leave_type = models.CharField(
+        max_length=20,
+        choices=LEAVE_TYPE_CHOICES,
+        default='vacation',
+        help_text='Type of leave'
+    )
+    reason = models.TextField(
+        blank=True,
+        help_text='Optional reason or description for the leave'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'leave_schedules'
+        verbose_name = 'Leave Schedule'
+        verbose_name_plural = 'Leave Schedules'
+        ordering = ['-start_date']
+        indexes = [
+            models.Index(fields=['user', 'start_date']),
+            models.Index(fields=['start_date', 'end_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email or self.user.username} - {self.start_date} to {self.end_date}"

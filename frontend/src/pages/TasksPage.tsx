@@ -621,9 +621,10 @@ export function TasksPage() {
             onClick={() => setFilterStatus(status as typeof filterStatus)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               filterStatus === status
-                ? 'bg-theme-primary text-white'
+                ? 'text-white'
                 : 'bg-theme-surface text-theme-secondary hover:bg-theme-surface-elevated border border-theme-light'
             }`}
+            style={filterStatus === status ? { backgroundColor: '#000000' } : {}}
           >
             {status === 'all' ? 'All Tasks' : statusConfig[status as Task['status']].label}
           </button>
