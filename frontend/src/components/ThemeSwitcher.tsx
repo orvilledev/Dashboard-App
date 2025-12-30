@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, themeNames } from '@/styles/themes';
-import type { ThemeName } from '@/styles/themes';
+import type { ThemeName, CustomThemeColors } from '@/styles/themes';
 
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
@@ -48,8 +48,8 @@ export function ThemeSwitcher() {
           <div 
             className="fixed w-72 z-[101] rounded-xl shadow-elevated border p-4 space-y-2"
             style={{
-              left: `${buttonRect.right + 8}px`,
-              bottom: `${window.innerHeight - buttonRect.bottom}px`,
+              left: `${buttonRect.left}px`,
+              top: `${buttonRect.bottom + 8}px`,
               backgroundColor: 'var(--color-surface)',
               borderColor: 'var(--color-border)',
             }}
@@ -61,7 +61,7 @@ export function ThemeSwitcher() {
               Choose Theme
             </h3>
             <div className="space-y-2">
-              {themeNames.map((themeName) => {
+              {themeNames.filter(name => name !== 'custom').map((themeName) => {
                 const themeColors = themes[themeName].colors;
                 const isSelected = theme === themeName;
                 
@@ -120,9 +120,7 @@ export function ThemeSwitcher() {
                       >
                         {themeName === 'light' && 'Default light theme'}
                         {themeName === 'dark' && 'Dark mode'}
-                        {themeName === 'ocean' && 'Cool blue tones'}
                         {themeName === 'metro' && 'MetroShoe scheme'}
-                        {themeName === 'sunset' && 'Warm orange'}
                       </div>
                     </div>
                     

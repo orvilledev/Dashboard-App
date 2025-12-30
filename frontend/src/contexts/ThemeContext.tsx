@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { themes, themeNames } from '@/styles/themes';
-import type { ThemeName } from '@/styles/themes';
+import type { ThemeName, CustomThemeColors } from '@/styles/themes';
 import { api } from '@/api';
 
 const THEME_STORAGE_KEY = 'amzpulse-theme';
@@ -49,10 +49,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const applyTheme = useCallback((themeName: ThemeName) => {
-    if (!themes[themeName]) return;
-    
-    const themeColors = themes[themeName].colors;
     const root = document.documentElement;
+    let themeColors;
+
+    // Handle custom theme (format: "custom:theme_id")
+    if (themeName.startsWith('custom:')) {
+      const themeId = themeName.replace('custom:', '');
+      try {
+        // First try to load from localStorage (for saved themes)
+        const savedThemesStr = localStorage.getItem('amzpulse-custom-themes');
+        if (savedThemesStr) {
+          const savedThemesObj = JSON.parse(savedThemesStr);
+          if (savedThemesObj[themeId]) {
+            themeColors = savedThemesObj[themeId].colors;
+          } else {
+            // Fallback to light theme if theme not found
+            themeColors = themes.light.colors;
+          }
+        } else {
+          // Fallback to light theme if no saved themes
+          themeColors = themes.light.colors;
+        }
+      } catch (error) {
+        console.warn('Failed to load custom theme:', error);
+        themeColors = themes.light.colors;
+      }
+    } else if (themes[themeName]) {
+      themeColors = themes[themeName].colors;
+    } else {
+      return; // Invalid theme
+    }
 
     // Apply CSS variables
     root.style.setProperty('--color-background', themeColors.background);
@@ -95,11 +121,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const token = await getToken();
         if (!token || !isMounted) return;
 
-        const preferences = await api.get<{ theme?: ThemeName }>('/users/preferences/', token);
-        if (isMounted && preferences?.theme && themes[preferences.theme]) {
-          setThemeState(preferences.theme);
-          applyTheme(preferences.theme);
-          saveTheme(preferences.theme);
+        const preferences = await api.get<{ theme?: ThemeName; custom_themes?: Record<string, any> }>('/users/preferences/', token);
+        if (isMounted && preferences?.theme) {
+          // Handle custom themes from backend
+          if (preferences.theme.startsWith('custom:') && preferences.custom_themes) {
+            localStorage.setItem('amzpulse-custom-themes', JSON.stringify(preferences.custom_themes));
+          }
+          
+          if (preferences.theme.startsWith('custom:') || themes[preferences.theme]) {
+            setThemeState(preferences.theme);
+            applyTheme(preferences.theme);
+            saveTheme(preferences.theme);
+          }
         }
       } catch (error) {
         console.warn('Failed to load theme preferences from backend:', error);
@@ -125,7 +158,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       try {
         const token = await getToken();
         if (token) {
-          api.post('/users/update_preferences/', { theme: newTheme }, token).catch(err => {
+          const payload: { theme: ThemeName } = { theme: newTheme };
+          
+          // Custom themes are already saved via the save_custom_theme endpoint
+          // No need to include colors here
+          
+          api.post('/users/update_preferences/', payload, token).catch(err => {
             console.warn('Failed to save theme to backend:', err);
           });
         }

@@ -181,9 +181,8 @@ class UserPreferences(models.Model):
     THEME_CHOICES = [
         ('light', 'Light Mode'),
         ('dark', 'Dark Mode'),
-        ('ocean', 'Ocean Blue'),
         ('metro', 'MetroShoe'),
-        ('sunset', 'Sunset'),
+        ('custom', 'Custom Theme'),
     ]
     
     user = models.OneToOneField(
@@ -214,12 +213,28 @@ class UserPreferences(models.Model):
         blank=True,
         help_text='Custom colors for tool categories. Maps category keys to hex color codes (e.g., "#3B82F6").'
     )
-    # Theme preference
+    # Theme preference - can be 'light', 'dark', 'metro', or 'custom:{theme_id}'
+    # Note: We don't use choices here because custom themes have dynamic IDs
     theme = models.CharField(
-        max_length=20,
-        choices=THEME_CHOICES,
+        max_length=50,
         default='light',
-        help_text='User selected color theme'
+        help_text='User selected color theme. For custom themes, format is "custom:{theme_id}"'
+    )
+    # Custom themes collection - stores multiple named custom themes as JSON
+    # e.g. {
+    #   "theme_id_1": {"name": "My Blue Theme", "colors": {...}},
+    #   "theme_id_2": {"name": "Dark Purple", "colors": {...}}
+    # }
+    custom_themes = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Collection of user-defined custom themes. Each theme has a unique ID, name, and colors.'
+    )
+    # Legacy field - kept for backward compatibility
+    custom_theme_colors = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Legacy: Single custom theme color scheme. Use custom_themes instead.'
     )
     # Dashboard layout - stores widget positions and sizes as JSON
     # e.g. {"openTasks": {"x": 0, "y": 0, "width": 400, "height": 300}, "quote": {"x": 500, "y": 0, "width": 300, "height": 200}}
@@ -227,6 +242,13 @@ class UserPreferences(models.Model):
         default=dict,
         blank=True,
         help_text='Dashboard widget positions and sizes'
+    )
+    # Task layout - stores task card sizes as JSON
+    # e.g. {"123": {"width": 500, "height": 300}, "456": {"width": 400, "height": 250}}
+    task_layout = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Task card sizes: {"task_id": {"width": 500, "height": 300}, ...}'
     )
     # Dashboard widget visibility - stores which widgets are visible
     # e.g. {"openTasks": true, "quote": true, "recentActivity": false}
@@ -273,6 +295,13 @@ class UserPreferences(models.Model):
         default=list,
         blank=True,
         help_text='Alarm list: [{"id": "...", "time": "HH:MM", "label": "...", "enabled": true, "repeat": ["mon", "tue"], "sound": "default"}, ...]'
+    )
+    # Quick access links for sidebar
+    # Format: [{"id": "...", "label": "...", "url": "..."}, ...]
+    quick_access_links = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Quick access links for sidebar: [{"id": "...", "label": "...", "url": "..."}, ...]'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

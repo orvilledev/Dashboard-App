@@ -1,8 +1,9 @@
-// Theme configuration with 5 color schemes
+// Theme configuration with 3 color schemes
 
 export interface Theme {
   name: string;
   label: string;
+  description: string;
   colors: {
     // Background colors
     background: string;
@@ -36,14 +37,15 @@ export const themes: Record<string, Theme> = {
   light: {
     name: 'light',
     label: '☀️ Light Mode',
+    description: 'A clean and minimal light theme with dark grey accents. Perfect for daytime use with excellent readability and reduced eye strain.',
     colors: {
       background: '#f5f5f5',      // Light grey background
       surface: '#ffffff',         // White surface
       surfaceElevated: '#4a4a4a', // Dark grey for hover
       
       textPrimary: '#000000',      // Pure black for primary text
-      textSecondary: '#1a1a1a',    // Very dark grey for secondary text (darker)
-      textTertiary: '#2d2d2d',     // Dark grey for tertiary text (darker)
+      textSecondary: '#0d0c0c',    // Gray text color
+      textTertiary: '#0d0c0c',     // Gray text color
       
       primary: '#2d2d2d',          // Dark grey for primary elements
       primaryHover: '#1a1a1a',    // Darker grey on hover
@@ -63,14 +65,15 @@ export const themes: Record<string, Theme> = {
   dark: {
     name: 'dark',
     label: '🌙 Dark Mode',
+    description: 'A sleek dark theme inspired by Netflix with deep blacks and vibrant red accents. Ideal for low-light environments and extended viewing sessions.',
     colors: {
       background: '#000000',      // Pure Black
       surface: '#141414',         // Netflix-style surface
       surfaceElevated: '#2a2a2a', // Slightly lighter surface
       
       textPrimary: '#ffffff',     // Pure white for text
-      textSecondary: '#b3b3b3',   // Muted gray text
-      textTertiary: '#808080',    // More muted gray
+      textSecondary: '#0d0c0c',   // Gray text color
+      textTertiary: '#0d0c0c',    // Gray text color
       
       primary: '#e50914',         // Netflix Red
       primaryHover: '#f40612',    // Slightly brighter red
@@ -86,45 +89,19 @@ export const themes: Record<string, Theme> = {
     },
   },
 
-  // 3. Ocean Blue
-  ocean: {
-    name: 'ocean',
-    label: '🌊 Ocean Blue',
-    colors: {
-      background: '#f5f5f5',      // Light gray from bottom of gradient
-      surface: '#ffffff',
-      surfaceElevated: '#14b8a6', // Turquoise background for hover
-      
-      textPrimary: '#115e67',      // Dark teal from top of gradient
-      textSecondary: '#0e7490',    // Medium teal
-      textTertiary: '#64748b',     // Gray-blue
-      
-      primary: '#115e67',          // Dark teal (matching textPrimary for buttons)
-      primaryHover: '#0d4a52',     // Darker teal for hover
-      primaryLight: '#ccfbf1',     // Light teal tint
-      
-      border: '#5eead4',           // Light turquoise border
-      borderLight: '#99f6e4',      // Very light turquoise
-      
-      success: '#10b981',
-      warning: '#f59e0b',
-      error: '#ef4444',
-      info: '#06b6d4',
-    },
-  },
-
-  // 4. MetroShoe (Inspired by attached logo)
+  // 3. MetroShoe (Inspired by attached logo)
   metro: {
     name: 'metro',
     label: '👟 MetroShoe',
+    description: 'A fresh and vibrant theme featuring MetroShoe\'s signature green palette on a clean white background. Brings energy and brand identity to your workspace.',
     colors: {
       background: '#ffffff',      // Pure white
       surface: '#ffffff',         // White surface
       surfaceElevated: '#82af2b', // Darker Yellow Green for category badges
       
       textPrimary: '#332d2b',     // Dark brownish gray from logo text
-      textSecondary: '#6b6b6b',   // Medium gray
-      textTertiary: '#9ca3af',    // Light gray
+      textSecondary: '#0d0c0c',   // Gray text color
+      textTertiary: '#0d0c0c',    // Gray text color
       
       primary: '#7ab02c',         // MetroShoe Green
       primaryHover: '#6a9d26',    // Darker green
@@ -140,26 +117,23 @@ export const themes: Record<string, Theme> = {
     },
   },
 
-  // 5. Sunset Orange (Alibaba Inspired)
-  sunset: {
-    name: 'sunset',
-    label: '🌅 Sunset',
+  // 4. Custom Theme (placeholder - actual colors loaded from localStorage/backend)
+  custom: {
+    name: 'custom',
+    label: '🎨 Custom Theme',
+    description: 'Create your own personalized color scheme',
     colors: {
-      background: '#fff9f5',      // Very light orange background
-      surface: '#ffffff',         // White surface
-      surfaceElevated: '#ff6600', // Orange background for hover
-      
-      textPrimary: '#333333',     // Dark gray text
-      textSecondary: '#666666',   // Medium gray text
-      textTertiary: '#999999',    // Light gray text
-      
-      primary: '#ff6600',         // Alibaba Orange
-      primaryHover: '#e65c00',    // Darker orange
-      primaryLight: '#fff0e6',    // Very light orange tint
-      
-      border: '#ffd9cc',          // Light orange-tinted border
-      borderLight: '#f2f2f2',     // Standard light gray border
-      
+      background: '#f5f5f5',
+      surface: '#ffffff',
+      surfaceElevated: '#4a4a4a',
+      textPrimary: '#000000',
+      textSecondary: '#0d0c0c',
+      textTertiary: '#0d0c0c',
+      primary: '#2d2d2d',
+      primaryHover: '#1a1a1a',
+      primaryLight: '#e5e5e5',
+      border: '#d3d3d3',
+      borderLight: '#e5e5e5',
       success: '#10b981',
       warning: '#f59e0b',
       error: '#ef4444',
@@ -168,7 +142,26 @@ export const themes: Record<string, Theme> = {
   },
 };
 
-export type ThemeName = keyof typeof themes;
+export type ThemeName = keyof typeof themes | `custom:${string}`;
 
-export const themeNames: ThemeName[] = ['light', 'dark', 'ocean', 'metro', 'sunset'];
+export const themeNames: ThemeName[] = ['light', 'dark', 'metro', 'custom'];
+
+// Custom theme interface for user-defined colors
+export interface CustomThemeColors {
+  background: string;
+  surface: string;
+  surfaceElevated: string;
+  textPrimary: string;
+  textSecondary: string;
+  textTertiary: string;
+  primary: string;
+  primaryHover: string;
+  primaryLight: string;
+  border: string;
+  borderLight: string;
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+}
 
